@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>my-reminders</title>
+
+    <script src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../bower_components/web-component-tester/browser.js"></script>
+
+    <!-- Import the element to test -->
+    <link rel="import" href="../src/my-reminders.html">
+</head>
+<body>
+    <test-fixture id="reminders-element-fixture">
+        <template>
+            <my-reminders></my-reminders>
+        </template>
+    </test-fixture>
+
+    <script>
+        suite('my-reminders test', function() {
+            var el;
+
+            setup(function() {
+                el                  = fixture('reminders-element-fixture');
+                alert               = sinon.spy();
+                sinon.spy(el, 'saveReminder');
+                sinon.spy(el, 'validDateFormat');
+                sinon.spy(el, 'getReminders');
+            });
+
+            test('should call saveReminder() when Save button is clicked', function() {
+                Polymer.dom(el.root).querySelector('paper-button').click();
+                expect(el.saveReminder.called).to.equal(true);
+            });
+
+            test('saveReminder() should catch empty reminder input and create an alert', function() {
+                // Not empty title and/or notes can only be considered not empty reminder
+                el.title      = '';
+                el.location   = '';
+                el.dueDate    = '';
+                el.notes      = '';
+                el.saveReminder();
+                expect(alert.calledOnce).to.be.true;
+            });
+
+            test('saveReminder() should create alert if due date is invalid format', function() {
+                el.title      = 'This is a reminder';
+                el.location   = '';
+                el.dueDate    = '07-05-2017';
+                el.notes      = 'Nothing to do here..';
+                el.saveReminder();
+                expect(alert.calledOnce).to.be.true;
+            });
+
+            test('Only accepts valid date input format (dd/mm/yyyy)', function() {
+                el.dueDate = '07/05/2017';
+                assert.isTrue(el.validDateFormat(el.dueDate), 'Invalid date format');
+            });
+
+            test('Catching invalid date input format', function() {
+                el.dueDate = 'Today';
+                assert.isFalse(el.validDateFormat(el.dueDate), 'Invalid date format');
+            });
+
+            test('getReminders() should return typeof array', function() {
+                assert.isArray(el.getReminders(), 'it is array regardless empty or not.');
+            });
+
+            test('should set new reminder to first index; save to localStorage; and display item', function() {
+                el.title     = 'A Title';
+                el.location  = 'Davao City';
+                el.dueDate   = '08/05/2017';
+                el.notes     = 'Nothing to do here..';
+                el.saveReminder();
+
+                assert.equal(el.reminders[0].title, 'A Title');
+                expect(el.setReminders.bind(el, el.reminders)).to.be.ok;
+                // flush(function() {
+                //     var paperitems = Polymer.dom(el.root).querySelectorAll('paper-item')[0].innerHTML;
+                //     console.log(paperitems);
+
+                //     assert.equal(first.textContent, 'This is a reminder test.');
+                //     assert.equal(second.textContent, 'Davao City | 08/05/2017');
+                //     assert.equal(third.textContent, 'Nothing to do here..');
+
+                //     done();
+                // });
+            });
+
+        });
+    </script>
+</body>
+</html>

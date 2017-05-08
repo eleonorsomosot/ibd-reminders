@@ -1,0 +1,144 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="shared-styles.html">
+
+
+<dom-module id="my-reminders">
+    <template>
+        <style include="shared-styles">
+            :host {
+                display: block;
+                padding: 10px;
+            }
+
+            .mini-card {
+                width: 50%;
+            }
+
+            .blue {
+                background-color: #4285f4;
+                color: #fff;
+            }
+
+            paper-checkbox {
+                --paper-checkbox-checked-color: green;
+            }
+        </style>
+
+        <!-- Input new reminder -->
+        <div class="card mini-card">
+            <paper-input label="What do you need to do?" value="{{ title }}"></paper-input>
+            <paper-input label="Where?" value="{{ location }}"></paper-input>
+            <paper-input label="When? (DD/MM/YYYY)" value="{{ dueDate }}"></paper-input>
+            <paper-input label="Notes..." value="{{ notes }}"></paper-input>
+            <paper-button class="blue" on-click="saveReminder">Save</paper-button>
+        </div>
+
+        <!-- Show reminders -->
+        <template is="dom-repeat" items="{{ reminders }}">
+            <div class="card mini-card">
+                <paper-item role="menuitemcheckbox">
+                    <paper-checkbox class="styled" checked$="{{ item.completed }}" on-change="toggleReminder"></paper-checkbox>
+                    <paper-item-body three-line>
+                        <div first><h3>{{ item.title }}</h3></div>
+                        <div secondary><small>{{ item.location }} | {{ item.dueDate }}</small></div>
+                        <div third><p>{{ item.notes }}</p></div>
+                    </paper-item-body>
+                </paper-item>
+            </div>
+        </template>
+    </template>
+
+    <script>
+        class MyReminders extends Polymer.Element {
+            static get is() { return 'my-reminders'; }
+
+            constructor() {
+                super();
+                this.clearInputs();
+                this.reminders = this.getReminders();
+            }
+
+            saveReminder() {
+                // Do not save empty reminder
+                if (this.title === '' && this.notes === '') {
+                    alert('Cannot save an empty reminder.');
+                    return;
+                }
+
+                // Catch invalid date format
+                if (this.dueDate !== '') {
+                    if (!this.validDateFormat(this.dueDate)) {
+                        alert('Invalid date input. Please follow date format.');
+                        return;
+                    }
+                }
+
+                var reminder = {
+                    title: this.title,
+                    location: this.location,
+                    dueDate: this.dueDate,
+                    notes: this.notes,
+                    completed: false
+                };
+
+                this.clearInputs();
+
+                this.reminders = this.getReminders();
+
+                // Put new reminder on first index to always show the recently added reminder on top
+                this.unshift('reminders', reminder);
+
+                this.setReminders(this.reminders);
+            }
+
+            toggleReminder(event) {
+                var index                       = event.model.index;
+                this.reminders                  = this.getReminders();
+                // Set reminder complete or incomplete
+                var completed                   = this.reminders[index].completed;
+                this.reminders[index].completed = completed ? false : true;
+                this.setReminders(this.reminders);
+            }
+
+            validDateFormat(date) {
+                var valid_format = /^[0-3]?[0-9]\/[01]?[0-9]\/[12][90][0-9][0-9]$/;
+
+                if (!date.match(valid_format)) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            getReminders() {
+                // Check any reminders saved on localStorage, get and return if it exists; return empty array, otherwise
+                var reminders = localStorage.getItem('reminders') === null ? [] : JSON.parse(localStorage.getItem('reminders'));
+
+                return reminders;
+            }
+
+            setReminders(reminders) {
+                // Save to localStorage so data becomes available even when page is reloaded
+                try {
+                    localStorage.setItem('reminders', JSON.stringify(reminders));
+                } catch (e) {
+                    alert('Something went wrong. Could not saved to localStorage.');
+                }
+            }
+
+            clearInputs() {
+                this.title = '';
+                this.location = '';
+                this.dueDate = '';
+                this.notes = '';
+            }
+        }
+
+        customElements.define(MyReminders.is, MyReminders);
+    </script>
+</dom-module>
